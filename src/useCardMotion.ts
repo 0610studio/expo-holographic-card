@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/immutability -- Reanimated SharedValue.value is mutable animation state. */
 import { DeviceMotion } from 'expo-sensors';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Gesture } from 'react-native-gesture-handler';
 import {
   Easing,
@@ -32,6 +32,7 @@ const clamp = (value: number, min: number, max: number) => {
 
 type CardMotionParams = Pick<
   AnimatedCardProps,
+  | 'enableTapToFlip'
   | 'enableSwipeToFlip'
   | 'flipDuration'
   | 'flipSwipeVelocity'
@@ -47,11 +48,13 @@ type CardMotionParams = Pick<
   cardHeight: number;
   cardWidth: number;
   maxTiltDeg?: number;
+  tapZoneWidth: number;
 };
 
 export default function useCardMotion({
   cardHeight,
   cardWidth,
+  enableTapToFlip = true,
   enableSwipeToFlip = true,
   flipDuration = FLIP_DURATION,
   flipSwipeVelocity = FLIP_SWIPE_VELOCITY,
@@ -64,6 +67,7 @@ export default function useCardMotion({
   sensorEnabled = false,
   sensorUpdateInterval = 16,
   springConfig = SPRING_CONFIG,
+  tapZoneWidth,
 }: CardMotionParams) {
   const rotateX = useSharedValue(0);
   const rotateY = useSharedValue(0);
@@ -71,26 +75,36 @@ export default function useCardMotion({
   const targetFlipDeg = useSharedValue(0);
   const lift = useSharedValue(0);
 
-  const flip = useCallback(
-    (direction: FlipDirection) => {
-      targetFlipDeg.value += direction * 180;
-      const nextFlipDegrees = targetFlipDeg.value;
-      flipDeg.value = withTiming(nextFlipDegrees, {
-        duration: flipDuration,
-        easing: Easing.inOut(Easing.cubic),
-      });
-      onFlip?.(direction, nextFlipDegrees);
-    },
-    [flipDeg, flipDuration, onFlip, targetFlipDeg]
-  );
+  const flipOnUI = (direction: FlipDirection) => {
+    'worklet';
+    targetFlipDeg.value += direction * 180;
+    const nextFlipDegrees = targetFlipDeg.value;
+    flipDeg.value = withTiming(nextFlipDegrees, {
+      duration: flipDuration,
+      easing: Easing.inOut(Easing.cubic),
+    });
+    if (onFlip) {
+      runOnJS(onFlip)(direction, nextFlipDegrees);
+    }
+  };
 
-  const flipLeft = useCallback(() => {
+  const flip = (direction: FlipDirection) => {
+    targetFlipDeg.value += direction * 180;
+    const nextFlipDegrees = targetFlipDeg.value;
+    flipDeg.value = withTiming(nextFlipDegrees, {
+      duration: flipDuration,
+      easing: Easing.inOut(Easing.cubic),
+    });
+    onFlip?.(direction, nextFlipDegrees);
+  };
+
+  const flipLeft = () => {
     flip(FlipDirection.Left);
-  }, [flip]);
+  };
 
-  const flipRight = useCallback(() => {
+  const flipRight = () => {
     flip(FlipDirection.Right);
-  }, [flip]);
+  };
 
   useEffect(() => {
     if (!sensorEnabled) {
@@ -175,15 +189,7 @@ export default function useCardMotion({
       if (isHorizontalSwipe) {
         const direction: FlipDirection =
           event.velocityX > 0 ? FlipDirection.Right : FlipDirection.Left;
-        targetFlipDeg.value += direction * 180;
-        const nextFlipDegrees = targetFlipDeg.value;
-        flipDeg.value = withTiming(nextFlipDegrees, {
-          duration: flipDuration,
-          easing: Easing.inOut(Easing.cubic),
-        });
-        if (onFlip) {
-          runOnJS(onFlip)(direction, nextFlipDegrees);
-        }
+        flipOnUI(direction);
       }
 
       if (!sensorEnabled) {
@@ -194,6 +200,26 @@ export default function useCardMotion({
     .onFinalize(() => {
       lift.value = withSpring(0, releaseLiftSpringConfig);
     });
+
+  const tapGesture = Gesture.Tap()
+    .enabled(enableTapToFlip)
+    .maxDistance(12)
+    .onEnd((event, success) => {
+      if (!success) {
+        return;
+      }
+
+      if (event.x <= tapZoneWidth) {
+        flipOnUI(FlipDirection.Left);
+        return;
+      }
+
+      if (event.x >= cardWidth - tapZoneWidth) {
+        flipOnUI(FlipDirection.Right);
+      }
+    });
+
+  const cardGesture = enableTapToFlip ? Gesture.Simultaneous(panGesture, tapGesture) : panGesture;
 
   const cardMotionStyle = useAnimatedStyle(() => ({
     transform: [
@@ -233,7 +259,7 @@ export default function useCardMotion({
     flipRight,
     frontFlipStyle,
     maxTiltDeg,
-    panGesture,
+    panGesture: cardGesture,
     rotateX,
     rotateY,
   };

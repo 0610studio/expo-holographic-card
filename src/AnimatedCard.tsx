@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
 
@@ -79,6 +79,7 @@ export default function AnimatedCard({
   } = useCardMotion({
     cardHeight,
     cardWidth,
+    enableTapToFlip,
     enableSwipeToFlip,
     flipDuration,
     flipSwipeVelocity,
@@ -91,6 +92,7 @@ export default function AnimatedCard({
     sensorEnabled,
     sensorUpdateInterval,
     springConfig,
+    tapZoneWidth,
   });
 
   const faceProps: AnimatedCardFaceRenderProps = {
@@ -185,23 +187,6 @@ export default function AnimatedCard({
             {backContent}
           </AnimatedCardFace>
         </Animated.View>
-
-        {enableTapToFlip && (
-          <>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Flip card left"
-              onPress={flipLeft}
-              style={[styles.tapZone, { width: tapZoneWidth, height: cardHeight, left: 0 }]}
-            />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Flip card right"
-              onPress={flipRight}
-              style={[styles.tapZone, { width: tapZoneWidth, height: cardHeight, right: 0 }]}
-            />
-          </>
-        )}
       </Animated.View>
     </GestureDetector>
   );
@@ -220,10 +205,5 @@ const styles = StyleSheet.create({
   faceFill: {
     width: '100%',
     height: '100%',
-  },
-  tapZone: {
-    position: 'absolute',
-    top: 0,
-    zIndex: 2,
   },
 });
