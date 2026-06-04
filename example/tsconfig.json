@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@0610studio/expo-holographic-card": ["../src/index"],
+      "@0610studio/expo-holographic-card/*": ["../src/*"]
+    }
+  }
+}

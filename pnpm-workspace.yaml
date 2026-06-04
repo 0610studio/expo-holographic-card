@@ -1,0 +1,13 @@
+packages:
+  - .
+  - docs
+  - example
+
+onlyBuiltDependencies:
+  - '@shopify/react-native-skia'
+  - core-js
+  - msgpackr-extract
+allowBuilds:
+  '@shopify/react-native-skia': true
+  core-js: true
+  msgpackr-extract: true
