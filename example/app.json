@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Expo Holo Card Example",
+    "name": "Expo Holographic Card Example",
     "slug": "expo-holographic-card-example",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,10 +9,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.jh.expoholocard.example"
+      "bundleIdentifier": "com.jh.expoholographiccard.example"
     },
     "android": {
-      "package": "com.jh.expoholocard.example"
+      "package": "com.jh.expoholographiccard.example"
     },
     "plugins": ["expo-router"]
   }
